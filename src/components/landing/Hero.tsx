@@ -12,10 +12,21 @@ export const Hero = () => {
             <Sparkles className="h-3.5 w-3.5" />
             Built for Indian indie hackers
           </div>
-          <h1 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] text-foreground">
-            Keyword to Ranked Article —{" "}
-            <span className="bg-orange-gradient bg-clip-text text-transparent">You Stay in Control</span>
-          </h1>
+          <div className="relative inline-block">
+            {/* Subtle orange glow behind headline */}
+            <div
+              aria-hidden
+              className="absolute inset-0 -z-10 blur-3xl opacity-50 pointer-events-none"
+              style={{
+                background:
+                  "radial-gradient(ellipse at 30% 40%, hsl(19 91% 47% / 0.55), transparent 55%), radial-gradient(ellipse at 75% 70%, hsl(19 95% 60% / 0.4), transparent 60%)",
+              }}
+            />
+            <h1 className="relative text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight leading-[1.05] text-foreground">
+              Keyword to Ranked Article —{" "}
+              <span className="bg-orange-gradient bg-clip-text text-transparent">You Stay in Control</span>
+            </h1>
+          </div>
           <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Khoji analyzes your competitors, finds their content gaps, and writes SEO articles you approve before they go live. Built for Indian founders. ₹799/month.
           </p>
