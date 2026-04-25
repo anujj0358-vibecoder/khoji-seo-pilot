@@ -7,12 +7,14 @@ interface LogoProps {
 }
 
 export const Logo = ({ to = "/", size = "md" }: LogoProps) => {
-  const dim = size === "sm" ? "h-7 w-7" : size === "lg" ? "h-10 w-10" : "h-9 w-9";
-  const text = size === "sm" ? "text-lg" : size === "lg" ? "text-2xl" : "text-xl";
+  const h = size === "sm" ? "h-7" : size === "lg" ? "h-12" : "h-9";
   return (
-    <Link to={to} className="flex items-center gap-2 group">
-      <img src={logo} alt="Khoji logo" className={`${dim} rounded-lg shadow-card group-hover:shadow-glow transition-shadow`} />
-      <span className={`${text} font-extrabold tracking-tight text-foreground`}>KHOJI</span>
+    <Link to={to} className="flex items-center group" aria-label="Khoji home">
+      <img
+        src={logo}
+        alt="Khoji"
+        className={`${h} w-auto object-contain transition-opacity group-hover:opacity-90`}
+      />
     </Link>
   );
 };
