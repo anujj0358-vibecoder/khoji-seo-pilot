@@ -30,7 +30,7 @@ export const HowItWorks = () => {
       </div>
       <div className="grid md:grid-cols-3 gap-6">
         {steps.map((step) => (
-          <div key={step.n} className="group relative rounded-2xl border border-border bg-card p-8 shadow-card hover:border-primary/50 transition-colors">
+          <div key={step.n} className="group relative rounded-2xl border border-border bg-card-elevated p-8 shadow-card hover:border-primary/50 transition-colors">
             <div className="text-5xl font-extrabold text-primary/30 group-hover:text-primary/60 transition-colors mb-4">{step.n}</div>
             <step.icon className="h-8 w-8 text-primary mb-4" />
             <h3 className="text-xl font-bold text-foreground mb-2">{step.title}</h3>
