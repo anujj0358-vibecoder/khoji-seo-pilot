@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Check, Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
 
@@ -17,6 +18,8 @@ export const Pricing = () => {
   const { session, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { startCheckout, loading: payLoading } = useRazorpayCheckout();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const autoStarted = useRef(false);
 
   const handleStart = () => {
     if (authLoading) return;
@@ -26,6 +29,20 @@ export const Pricing = () => {
     }
     startCheckout({ onSuccess: () => navigate("/dashboard") });
   };
+
+  // Auto-open checkout if user was bounced from /dashboard for missing payment
+  useEffect(() => {
+    if (autoStarted.current) return;
+    if (authLoading) return;
+    if (searchParams.get("pay") !== "required") return;
+    if (!session) return;
+    autoStarted.current = true;
+    // Clear the query param so refresh doesn't re-trigger
+    const next = new URLSearchParams(searchParams);
+    next.delete("pay");
+    setSearchParams(next, { replace: true });
+    startCheckout({ onSuccess: () => navigate("/dashboard") });
+  }, [authLoading, session, searchParams, setSearchParams, startCheckout, navigate]);
 
   return (
     <section id="pricing" className="container py-20 md:py-28">
