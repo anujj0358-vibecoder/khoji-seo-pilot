@@ -28,22 +28,22 @@ Deno.serve(async (req) => {
     }
     const kw = keyword.trim();
 
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) return json({ error: "AI not configured" }, 500);
+    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+    if (!OPENAI_API_KEY) return json({ error: "OPENAI_API_KEY not configured" }, 500);
 
     const systemPrompt = `You are an expert SEO strategist for the Indian market. For a given keyword, return:
 - 5 realistic competitor websites currently ranking on Google for that keyword (use real Indian-relevant domains where applicable). For each: site domain, approximate word count (1800-3200), and a one-line summary of what they cover and what they miss.
 - 6 specific content gaps — things none of those top results cover well — phrased as crisp bullets.
 - An article brief: SEO-optimized title (under 70 chars), meta description (under 160 chars), target word count (~2500-3000), 6 H2 section headings, and 3 useful FAQs. All MUST be specific to the keyword, not generic.`;
 
-    const aiRes = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Keyword: "${kw}"` },
@@ -94,12 +94,12 @@ Deno.serve(async (req) => {
       }),
     });
 
-    if (aiRes.status === 429) return json({ error: "Rate limit — please try again in a moment." }, 429);
-    if (aiRes.status === 402) return json({ error: "AI credits exhausted. Add funds in Settings → Workspace → Usage." }, 402);
+    if (aiRes.status === 429) return json({ error: "OpenAI rate limit — please try again in a moment." }, 429);
+    if (aiRes.status === 401) return json({ error: "Invalid OPENAI_API_KEY." }, 401);
     if (!aiRes.ok) {
       const t = await aiRes.text();
-      console.error("AI gateway error:", aiRes.status, t);
-      return json({ error: "AI gateway error" }, 500);
+      console.error("OpenAI error:", aiRes.status, t);
+      return json({ error: "OpenAI error" }, 500);
     }
     const data = await aiRes.json();
     const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
