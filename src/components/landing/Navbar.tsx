@@ -19,7 +19,7 @@ export const Navbar = () => {
             <Link to="/auth">Log in</Link>
           </Button>
           <Button asChild variant="hero" size="sm">
-            <Link to="/auth">Start Free Trial</Link>
+            <Link to="/auth">Get Khoji Pro</Link>
           </Button>
         </div>
       </nav>

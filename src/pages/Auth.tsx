@@ -1,10 +1,13 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Logo } from "@/components/khoji/Logo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { lovable } from "@/integrations/lovable";
+import { useAuth } from "@/contexts/AuthContext";
 
 const GoogleIcon = () => (
   <svg viewBox="0 0 24 24" className="h-5 w-5">
@@ -17,17 +20,60 @@ const GoogleIcon = () => (
 
 const Auth = () => {
   const [mode, setMode] = useState<"login" | "signup">("signup");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { session, loading } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const redirectTo = (location.state as { from?: string } | null)?.from ?? "/dashboard";
+
+  useEffect(() => {
+    if (!loading && session) navigate(redirectTo, { replace: true });
+  }, [loading, session, navigate, redirectTo]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success(mode === "signup" ? "Account created (mock)" : "Welcome back (mock)");
-    navigate("/dashboard");
+    setSubmitting(true);
+    try {
+      if (mode === "signup") {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+            data: { full_name: fullName },
+          },
+        });
+        if (error) throw error;
+        toast.success("Account created!");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        toast.success("Welcome back!");
+      }
+    } catch (err: any) {
+      toast.error(err?.message ?? "Authentication failed");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  const handleGoogle = () => {
-    toast.success("Google sign-in (mock)");
-    navigate("/dashboard");
+  const handleGoogle = async () => {
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin + "/dashboard",
+      });
+      if (result.error) {
+        toast.error("Google sign-in failed");
+        return;
+      }
+      // If redirected, browser navigates away; otherwise tokens are set
+    } catch (err: any) {
+      toast.error(err?.message ?? "Google sign-in failed");
+    }
   };
 
   return (
@@ -40,7 +86,7 @@ const Auth = () => {
           <div className="rounded-2xl border border-border bg-card p-8 shadow-card">
             <h1 className="text-2xl font-bold text-foreground text-center">Welcome to Khoji</h1>
             <p className="mt-2 text-sm text-muted-foreground text-center">
-              {mode === "signup" ? "Start your 3-day free trial" : "Log in to your account"}
+              {mode === "signup" ? "Create your account to continue" : "Log in to your account"}
             </p>
 
             <Button onClick={handleGoogle} type="button" className="mt-6 w-full bg-foreground text-background hover:bg-foreground/90 h-11">
@@ -55,16 +101,46 @@ const Auth = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {mode === "signup" && (
+                <div className="space-y-2">
+                  <Label htmlFor="fullName" className="text-foreground">Full name</Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Your name"
+                    className="bg-background border-border text-foreground"
+                  />
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-foreground">Email</Label>
-                <Input id="email" type="email" required placeholder="you@startup.in" className="bg-background border-border text-foreground" />
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@startup.in"
+                  className="bg-background border-border text-foreground"
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-foreground">Password</Label>
-                <Input id="password" type="password" required placeholder="••••••••" className="bg-background border-border text-foreground" />
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="bg-background border-border text-foreground"
+                />
               </div>
-              <Button type="submit" variant="hero" size="lg" className="w-full">
-                {mode === "signup" ? "Create account" : "Log in"}
+              <Button type="submit" variant="hero" size="lg" className="w-full" disabled={submitting}>
+                {submitting ? "Please wait…" : mode === "signup" ? "Create account" : "Log in"}
               </Button>
             </form>
 

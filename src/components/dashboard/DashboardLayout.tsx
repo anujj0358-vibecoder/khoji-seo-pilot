@@ -4,10 +4,13 @@ import { Button } from "@/components/ui/button";
 import { LogOut } from "lucide-react";
 import { Logo } from "@/components/khoji/Logo";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export const DashboardLayout = () => {
   const navigate = useNavigate();
-  const handleLogout = () => {
+  const { user, signOut } = useAuth();
+  const handleLogout = async () => {
+    await signOut();
     toast.success("Logged out");
     navigate("/");
   };
@@ -20,7 +23,7 @@ export const DashboardLayout = () => {
             <Logo size="sm" />
           </div>
           <div className="ml-auto flex items-center gap-3">
-            <span className="hidden sm:inline text-sm text-muted-foreground">founder@startup.in</span>
+            <span className="hidden sm:inline text-sm text-muted-foreground">{user?.email ?? ""}</span>
             <Button onClick={handleLogout} variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">
               <LogOut className="h-4 w-4" />
               Logout

@@ -1,6 +1,8 @@
 import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Check, Loader2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { useRazorpayCheckout } from "@/hooks/useRazorpayCheckout";
 
 const features = [
   "Unlimited keyword searches",
@@ -12,6 +14,19 @@ const features = [
 ];
 
 export const Pricing = () => {
+  const { session, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
+  const { startCheckout, loading: payLoading } = useRazorpayCheckout();
+
+  const handleStart = () => {
+    if (authLoading) return;
+    if (!session) {
+      navigate("/auth", { state: { from: "/" } });
+      return;
+    }
+    startCheckout({ onSuccess: () => navigate("/dashboard") });
+  };
+
   return (
     <section id="pricing" className="container py-20 md:py-28">
       <div className="text-center max-w-2xl mx-auto mb-16">
@@ -21,14 +36,15 @@ export const Pricing = () => {
       <div className="max-w-md mx-auto">
         <div className="relative rounded-3xl border border-primary/40 bg-card p-8 shadow-glow">
           <div className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-orange-gradient px-4 py-1 text-xs font-bold text-primary-foreground">
-            MOST POPULAR
+            LAUNCH OFFER
           </div>
           <h3 className="text-2xl font-bold text-foreground">Khoji Pro</h3>
-          <div className="mt-4 flex items-baseline gap-1">
-            <span className="text-5xl font-extrabold text-foreground">₹799</span>
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-5xl font-extrabold text-foreground">₹599</span>
+            <span className="text-2xl text-muted-foreground/70 line-through">₹799</span>
             <span className="text-muted-foreground">/month</span>
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">3-day free trial · Cancel anytime</p>
+          <p className="mt-2 text-sm text-primary font-medium">Limited-time launch price · Cancel anytime</p>
           <ul className="mt-8 space-y-3">
             {features.map((f) => (
               <li key={f} className="flex items-start gap-3 text-foreground">
@@ -37,8 +53,20 @@ export const Pricing = () => {
               </li>
             ))}
           </ul>
-          <Button asChild variant="hero" size="lg" className="mt-8 w-full">
-            <Link to="/auth">Start Free Trial</Link>
+          <Button
+            variant="hero"
+            size="lg"
+            className="mt-8 w-full"
+            onClick={handleStart}
+            disabled={payLoading}
+          >
+            {payLoading ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" /> Opening checkout…
+              </>
+            ) : (
+              "Get Khoji Pro — ₹599"
+            )}
           </Button>
         </div>
       </div>
