@@ -2,10 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { Search, Edit3, Copy, Download, FileText, TrendingUp, Lightbulb, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { mockSerp, mockGaps, mockBrief, mockArticle } from "@/lib/mockData";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+
+type SerpRow = { site: string; words: number; summary: string };
+type Brief = { title: string; meta: string; wordCount: number; h2: string[]; faqs: string[] };
 
 const Research = () => {
   const { session } = useAuth();
@@ -15,6 +17,10 @@ const Research = () => {
   const [showResults, setShowResults] = useState(false);
   const [writing, setWriting] = useState(false);
   const [approved, setApproved] = useState(false);
+  const [serp, setSerp] = useState<SerpRow[]>([]);
+  const [gaps, setGaps] = useState<string[]>([]);
+  const [brief, setBrief] = useState<Brief | null>(null);
+  const [article, setArticle] = useState<string>("");
   const researchIdRef = useRef<string | null>(null);
 
   const handleSearch = async (e: React.FormEvent) => {
@@ -24,27 +30,35 @@ const Research = () => {
     setResearching(true);
     setShowResults(false);
     setApproved(false);
+    setArticle("");
     researchIdRef.current = null;
 
-    await new Promise((r) => setTimeout(r, 2000));
+    const { data, error } = await supabase.functions.invoke("research-brief", {
+      body: { keyword: k },
+    });
+    if (error || !data || (data as any).error) {
+      const msg = (data as any)?.error || error?.message || "Research failed";
+      toast.error(msg);
+      setResearching(false);
+      return;
+    }
+    const result = data as { serp: SerpRow[]; gaps: string[]; brief: Brief };
+    setSerp(result.serp);
+    setGaps(result.gaps);
+    setBrief(result.brief);
 
-    // persist research to supabase
     if (session?.user) {
-      const { data, error } = await supabase
+      const { data: row } = await supabase
         .from("researches")
         .insert({
           user_id: session.user.id,
           keyword: k,
           status: "brief_generated",
-          brief: mockBrief as any,
+          brief: { ...result.brief, serp: result.serp, gaps: result.gaps } as any,
         })
         .select("id")
         .maybeSingle();
-      if (error) {
-        toast.error("Could not save research");
-      } else if (data) {
-        researchIdRef.current = data.id;
-      }
+      if (row) researchIdRef.current = row.id;
     }
 
     setSubmittedKeyword(k);
@@ -54,13 +68,24 @@ const Research = () => {
   };
 
   const handleApprove = async () => {
+    if (!brief) return;
     setWriting(true);
-    await new Promise((r) => setTimeout(r, 3000));
+    const { data, error } = await supabase.functions.invoke("research-article", {
+      body: { keyword: submittedKeyword, brief },
+    });
+    if (error || !data || (data as any).error) {
+      const msg = (data as any)?.error || error?.message || "Article generation failed";
+      toast.error(msg);
+      setWriting(false);
+      return;
+    }
+    const generated = (data as { article: string }).article;
+    setArticle(generated);
 
     if (researchIdRef.current && session?.user) {
       await supabase
         .from("researches")
-        .update({ status: "article_written", article: mockArticle })
+        .update({ status: "article_written", article: generated })
         .eq("id", researchIdRef.current);
     }
 
@@ -70,12 +95,12 @@ const Research = () => {
   };
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(mockArticle);
+    navigator.clipboard.writeText(article);
     toast.success("Article copied to clipboard");
   };
 
   const handleDownload = () => {
-    const blob = new Blob([mockArticle], { type: "text/plain" });
+    const blob = new Blob([article], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -127,11 +152,11 @@ const Research = () => {
         <div className="rounded-2xl border border-border bg-card p-16 flex flex-col items-center justify-center shadow-card">
           <Loader2 className="h-10 w-10 text-primary animate-spin" />
           <div className="mt-4 text-foreground font-medium">Analyzing top-ranking pages…</div>
-          <div className="mt-1 text-sm text-muted-foreground">Reading SERPs, finding gaps, drafting your brief.</div>
+          <div className="mt-1 text-sm text-muted-foreground">Reading SERPs, finding gaps, drafting your brief with AI.</div>
         </div>
       )}
 
-      {showResults && (
+      {showResults && brief && (
         <>
           {/* SERP Analysis */}
           <section className="rounded-2xl border border-border bg-card overflow-hidden shadow-card">
@@ -141,7 +166,7 @@ const Research = () => {
               </h2>
             </div>
             <div className="divide-y divide-border">
-              {mockSerp.map((row, i) => (
+              {serp.map((row, i) => (
                 <div key={i} className="px-6 py-4 flex items-start gap-4">
                   <div className="text-2xl font-bold text-muted-foreground/60 w-8">{i + 1}</div>
                   <div className="flex-1 min-w-0">
@@ -165,7 +190,7 @@ const Research = () => {
               </h2>
             </div>
             <ul className="p-6 space-y-3">
-              {mockGaps.map((gap, i) => (
+              {gaps.map((gap, i) => (
                 <li key={i} className="flex items-start gap-3 text-foreground">
                   <span className="mt-1.5 h-2 w-2 rounded-full bg-primary shrink-0" />
                   <span>{gap}</span>
@@ -180,11 +205,11 @@ const Research = () => {
               <h2 className="text-lg font-bold text-primary flex items-center gap-2">
                 <FileText className="h-5 w-5" /> Article Brief
               </h2>
-              <span className="text-xs text-muted-foreground">~{mockBrief.wordCount} words target</span>
+              <span className="text-xs text-muted-foreground">~{brief.wordCount} words target</span>
             </div>
             <div className="p-6 space-y-6">
-              <BriefField label="Title" value={mockBrief.title} />
-              <BriefField label="Meta description" value={mockBrief.meta} />
+              <BriefField label="Title" value={brief.title} />
+              <BriefField label="Meta description" value={brief.meta} />
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-sm font-semibold text-foreground">H2 sections</div>
@@ -193,7 +218,7 @@ const Research = () => {
                   </Button>
                 </div>
                 <ul className="space-y-2">
-                  {mockBrief.h2.map((h, i) => (
+                  {brief.h2.map((h, i) => (
                     <li key={i} className="rounded-lg bg-background border border-border px-4 py-2.5 text-sm text-foreground">
                       {i + 1}. {h}
                     </li>
@@ -208,7 +233,7 @@ const Research = () => {
                   </Button>
                 </div>
                 <ul className="space-y-2">
-                  {mockBrief.faqs.map((q, i) => (
+                  {brief.faqs.map((q, i) => (
                     <li key={i} className="rounded-lg bg-background border border-border px-4 py-2.5 text-sm text-foreground">{q}</li>
                   ))}
                 </ul>
@@ -224,17 +249,17 @@ const Research = () => {
           {writing && (
             <div className="rounded-2xl border border-border bg-card p-16 flex flex-col items-center justify-center shadow-card">
               <Loader2 className="h-10 w-10 text-primary animate-spin" />
-              <div className="mt-4 text-foreground font-medium">Writing your article…</div>
-              <div className="mt-1 text-sm text-muted-foreground">Drafting H2s, FAQs and intro. About 3 seconds.</div>
+              <div className="mt-4 text-foreground font-medium">Writing your article with AI…</div>
+              <div className="mt-1 text-sm text-muted-foreground">Drafting H2s, FAQs and intro. This may take 10–20 seconds.</div>
             </div>
           )}
 
-          {approved && (
+          {approved && article && (
             <section className="rounded-2xl border border-border bg-card overflow-hidden shadow-card">
               <div className="px-6 py-4 border-b border-border bg-primary/10 flex items-center justify-between">
                 <h2 className="text-lg font-bold text-primary">Full Article</h2>
                 <div className="flex items-center gap-3">
-                  <span className="text-xs text-muted-foreground">{mockArticle.split(/\s+/).length} words</span>
+                  <span className="text-xs text-muted-foreground">{article.trim().split(/\s+/).length} words</span>
                   <Button onClick={handleCopy} variant="ghost" size="sm" className="text-foreground">
                     <Copy className="h-3.5 w-3.5" /> Copy
                   </Button>
@@ -244,7 +269,7 @@ const Research = () => {
                 </div>
               </div>
               <article className="p-8 prose prose-invert max-w-none">
-                <pre className="whitespace-pre-wrap font-sans text-foreground leading-relaxed text-[15px] bg-transparent border-0 p-0">{mockArticle}</pre>
+                <pre className="whitespace-pre-wrap font-sans text-foreground leading-relaxed text-[15px] bg-transparent border-0 p-0">{article}</pre>
               </article>
             </section>
           )}
