@@ -1,1 +1,7 @@
 project_id = "xfkounqcshqxlsejiwde"
+
+[functions.research-brief]
+verify_jwt = true
+
+[functions.research-article]
+verify_jwt = true
