@@ -38,7 +38,9 @@ const Research = () => {
     });
     if (error || !data || (data as any).error) {
       const msg = (data as any)?.error || error?.message || "Research failed";
-      toast.error(msg);
+      const details = (data as any)?.details;
+      console.error("research-brief failed:", { error, data });
+      toast.error(msg, { description: details ? String(details).slice(0, 200) : undefined });
       setResearching(false);
       return;
     }
@@ -75,7 +77,9 @@ const Research = () => {
     });
     if (error || !data || (data as any).error) {
       const msg = (data as any)?.error || error?.message || "Article generation failed";
-      toast.error(msg);
+      const details = (data as any)?.details;
+      console.error("research-article failed:", { error, data });
+      toast.error(msg, { description: details ? String(details).slice(0, 200) : undefined });
       setWriting(false);
       return;
     }
