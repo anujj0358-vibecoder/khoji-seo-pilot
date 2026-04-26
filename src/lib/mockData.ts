@@ -36,35 +36,39 @@ export const mockBrief = {
 
 export const mockArticle = `# Best Accounting Software for Indian Startups in 2025
 
-Picking accounting software in India isn't just about double-entry bookkeeping anymore. Between GST returns, e-invoicing thresholds, UPI-led collections and the pressure to keep monthly costs sane, Indian founders need a tool that fits the local reality — not one designed for a Delaware C-Corp.
+Picking accounting software in India in 2025 isn't just about double-entry bookkeeping anymore. Between quarterly GST returns, the lowering e-invoicing threshold, UPI-led collections from customers and the constant pressure to keep monthly tooling costs sane, Indian founders need an accounting stack that fits the local reality — not one designed for a Delaware C-Corp running on Stripe. This guide compares the five tools most often shortlisted by Indian startups today, and tells you exactly which one to pick at each revenue stage.
 
 ## What Indian founders actually need in 2025
 
-If you're a bootstrapped founder, your accounting stack has to do five things well: GST-ready invoicing, UPI auto-reconciliation, e-invoicing for B2B, multi-GSTIN support, and a clean export to your CA's Tally file. Anything else is a bonus.
+If you're a bootstrapped founder, your accounting stack has to do five things well, and almost nothing else matters. First, GST-ready invoicing with HSN/SAC code support and the right place-of-supply logic. Second, UPI auto-reconciliation so that ₹500 customer payments don't pile up as unmatched line items. Third, e-invoicing readiness because the threshold has been steadily falling and is already at ₹5 Cr aggregate turnover. Fourth, multi-GSTIN support if you sell into more than one state. And fifth, a clean export to whatever your CA actually opens — usually Tally. Most global tools fail on at least three of these.
 
 ## How we evaluated each tool
 
-We scored Zoho Books, TallyPrime, QuickBooks India, Vyapar and Marg ERP across pricing in INR (including GST), UPI reconciliation, e-invoicing readiness, multi-GSTIN handling and CA-friendliness.
+We scored Zoho Books, TallyPrime, QuickBooks India, Vyapar and Marg ERP across six dimensions: pricing in INR including 18% GST, UPI reconciliation accuracy on a 30-transaction sample, e-invoicing readiness (IRN generation and QR code embedding), multi-GSTIN handling for cross-state sellers, CA-friendliness measured by how cleanly data exports back to Tally, and finally the founder experience on a phone — because most Indian founders open their books on mobile, not on a desktop.
 
 ## Top 5 accounting software compared
 
-Zoho Books wins on cloud-first UX and UPI auto-match. TallyPrime stays unbeatable for CA hand-off. QuickBooks India is a strong middle ground if you want global aesthetics. Vyapar is the best value under ₹5,000/year for solo founders. Marg ERP shines for inventory-heavy businesses.
+**Zoho Books** wins on cloud-first UX and UPI auto-match — its bank feed for HDFC, ICICI and Axis is genuinely reliable, and the GST returns dashboard is the cleanest in the market. Pricing starts at ₹749/month for the Standard plan. **TallyPrime** stays unbeatable for CA hand-off and stock-heavy SMBs; it's still the default any chartered accountant in Tier-2 cities will recognise. **QuickBooks India** is a strong middle ground if you also need a polished mobile experience and you don't care that some Indian-specific edge cases need workarounds. **Vyapar** is the best value under ₹5,000/year for solo founders and freelancers — particularly strong on simple GST invoicing and WhatsApp share. **Marg ERP** shines for inventory-heavy businesses, especially in pharma and FMCG distribution where batch and expiry tracking matter.
+
+## Multi-GSTIN, e-invoicing and compliance
+
+Zoho Books and TallyPrime are the only two that handle multi-GSTIN cleanly without separate company files. Both also generate e-invoices with IRN and QR codes natively, which becomes mandatory once your aggregate turnover crosses ₹5 Cr. QuickBooks India supports e-invoicing through an add-on. Vyapar and Marg ERP require manual upload to the IRP portal — fine for now, painful at scale.
 
 ## Migration from Tally or Excel
 
-A clean migration takes 2–4 days for most pre-Series A startups. Export your Tally data as XML, map ledgers to Zoho/QuickBooks chart of accounts, and reconcile opening balances at the start of a fiscal quarter — not mid-month.
+A clean migration takes 2–4 days for most pre-Series A startups. Export your Tally data as XML, map ledgers to your new chart of accounts, reconcile opening balances at the start of a fiscal quarter — never mid-month — and run both systems in parallel for the first 30 days. The most common mistake is migrating without locking the prior period in Tally first; you'll end up with two slightly different trial balances and a very unhappy CA.
 
 ## Which tool to pick based on your stage
 
-Pre-revenue: Vyapar or Zoho Books free tier. ₹50L–5Cr ARR: Zoho Books Standard. ₹5Cr+: Zoho Books Premium or TallyPrime with a competent CA.
+Pre-revenue or under ₹50L ARR: Vyapar, or the Zoho Books free tier if you stay under their invoice limit. ₹50L–5Cr ARR: Zoho Books Standard or Professional — the UPI auto-match alone justifies it. ₹5Cr+: Zoho Books Premium or TallyPrime paired with a competent CA who already knows your industry. Whatever you pick, commit to it for at least 18 months — switching mid-year creates more pain than it saves.
 
 ## FAQ
 
-**Is Zoho Books or TallyPrime better for a small Indian startup?** Zoho Books for cloud-first teams; TallyPrime if your CA insists.
+**Is Zoho Books or TallyPrime better for a small Indian startup?** Zoho Books for cloud-first teams that live on dashboards; TallyPrime if your CA insists or if you have heavy inventory.
 
-**Do I need e-invoicing under ₹5 Cr turnover?** No, but enabling it early avoids a scramble later.
+**Do I need e-invoicing under ₹5 Cr turnover?** No, but enabling it early avoids a scramble the quarter you cross the threshold.
 
-**Can I import Tally data into Zoho Books?** Yes, via XML export and the Zoho migration utility.`;
+**Can I import Tally data into Zoho Books?** Yes — export as XML, use the Zoho migration utility, and reconcile opening balances on the first day of a quarter.`;
 
 export const mockHistory = [
   { id: "1", keyword: "best accounting software india", date: "2025-04-22", status: "Article Written" as const },
