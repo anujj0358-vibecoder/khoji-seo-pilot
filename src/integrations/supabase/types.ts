@@ -38,6 +38,39 @@ export type Database = {
         }
         Relationships: []
       }
+      researches: {
+        Row: {
+          article: string | null
+          brief: Json | null
+          created_at: string
+          id: string
+          keyword: string
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          article?: string | null
+          brief?: Json | null
+          created_at?: string
+          id?: string
+          keyword: string
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          article?: string | null
+          brief?: Json | null
+          created_at?: string
+          id?: string
+          keyword?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subscriptions: {
         Row: {
           activated_at: string | null
