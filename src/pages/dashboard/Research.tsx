@@ -1,24 +1,70 @@
-import { useState } from "react";
-import { Search, Edit3, Copy, Download, FileText, TrendingUp, Lightbulb, ExternalLink } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Search, Edit3, Copy, Download, FileText, TrendingUp, Lightbulb, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { mockSerp, mockGaps, mockBrief, mockArticle } from "@/lib/mockData";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Research = () => {
+  const { session } = useAuth();
   const [keyword, setKeyword] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [submittedKeyword, setSubmittedKeyword] = useState("");
+  const [researching, setResearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const [writing, setWriting] = useState(false);
   const [approved, setApproved] = useState(false);
+  const researchIdRef = useRef<string | null>(null);
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!keyword.trim()) return;
-    setSubmitted(true);
+    const k = keyword.trim();
+    if (!k) return;
+    setResearching(true);
+    setShowResults(false);
     setApproved(false);
-    toast.success("Analyzing top-ranking pages...");
+    researchIdRef.current = null;
+
+    await new Promise((r) => setTimeout(r, 2000));
+
+    // persist research to supabase
+    if (session?.user) {
+      const { data, error } = await supabase
+        .from("researches")
+        .insert({
+          user_id: session.user.id,
+          keyword: k,
+          status: "brief_generated",
+          brief: mockBrief as any,
+        })
+        .select("id")
+        .maybeSingle();
+      if (error) {
+        toast.error("Could not save research");
+      } else if (data) {
+        researchIdRef.current = data.id;
+      }
+    }
+
+    setSubmittedKeyword(k);
+    setResearching(false);
+    setShowResults(true);
+    toast.success("SERP analyzed — brief ready");
   };
 
-  const handleApprove = () => {
+  const handleApprove = async () => {
+    setWriting(true);
+    await new Promise((r) => setTimeout(r, 3000));
+
+    if (researchIdRef.current && session?.user) {
+      await supabase
+        .from("researches")
+        .update({ status: "article_written", article: mockArticle })
+        .eq("id", researchIdRef.current);
+    }
+
+    setWriting(false);
     setApproved(true);
     toast.success("Brief approved — article generated");
   };
@@ -33,7 +79,7 @@ const Research = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${keyword.replace(/\s+/g, "-")}.txt`;
+    a.download = `${submittedKeyword.replace(/\s+/g, "-") || "article"}.txt`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -53,12 +99,15 @@ const Research = () => {
             onChange={(e) => setKeyword(e.target.value)}
             placeholder="Enter a keyword to research… e.g. best accounting software India"
             className="h-14 pl-12 text-base bg-card border-border text-foreground"
+            disabled={researching}
           />
         </div>
-        <Button type="submit" variant="hero" size="xl">Research</Button>
+        <Button type="submit" variant="hero" size="xl" disabled={researching || !keyword.trim()}>
+          {researching ? (<><Loader2 className="h-4 w-4 animate-spin" /> Researching…</>) : "Research"}
+        </Button>
       </form>
 
-      {!submitted && (
+      {!showResults && !researching && (
         <div className="grid md:grid-cols-3 gap-4">
           {[
             { icon: TrendingUp, label: "SERP Analysis" },
@@ -74,7 +123,15 @@ const Research = () => {
         </div>
       )}
 
-      {submitted && (
+      {researching && (
+        <div className="rounded-2xl border border-border bg-card p-16 flex flex-col items-center justify-center shadow-card">
+          <Loader2 className="h-10 w-10 text-primary animate-spin" />
+          <div className="mt-4 text-foreground font-medium">Analyzing top-ranking pages…</div>
+          <div className="mt-1 text-sm text-muted-foreground">Reading SERPs, finding gaps, drafting your brief.</div>
+        </div>
+      )}
+
+      {showResults && (
         <>
           {/* SERP Analysis */}
           <section className="rounded-2xl border border-border bg-card overflow-hidden shadow-card">
@@ -157,12 +214,20 @@ const Research = () => {
                 </ul>
               </div>
               {!approved && (
-                <Button onClick={handleApprove} variant="hero" size="xl" className="w-full">
-                  Approve Brief & Write Article
+                <Button onClick={handleApprove} variant="hero" size="xl" className="w-full" disabled={writing}>
+                  {writing ? (<><Loader2 className="h-4 w-4 animate-spin" /> Writing your article…</>) : "Approve Brief & Write Article"}
                 </Button>
               )}
             </div>
           </section>
+
+          {writing && (
+            <div className="rounded-2xl border border-border bg-card p-16 flex flex-col items-center justify-center shadow-card">
+              <Loader2 className="h-10 w-10 text-primary animate-spin" />
+              <div className="mt-4 text-foreground font-medium">Writing your article…</div>
+              <div className="mt-1 text-sm text-muted-foreground">Drafting H2s, FAQs and intro. About 3 seconds.</div>
+            </div>
+          )}
 
           {approved && (
             <section className="rounded-2xl border border-border bg-card overflow-hidden shadow-card">
