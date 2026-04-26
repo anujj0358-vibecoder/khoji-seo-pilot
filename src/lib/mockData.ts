@@ -1,19 +1,18 @@
 export const mockSerp = [
-  { site: "zoho.com/in/books", words: 2840, summary: "Promotes Zoho Books with feature comparison and India GST coverage." },
-  { site: "tallysolutions.com", summary: "Brand-led pitch for TallyPrime; weak on cloud-first comparisons.", words: 1920 },
-  { site: "quickbooks.intuit.com/in", words: 2150, summary: "Generic top-10 list, light on Indian compliance specifics." },
-  { site: "g2.com/categories/accounting-india", words: 3420, summary: "Listicle with reviews; thin original analysis." },
-  { site: "techjockey.com/blog", words: 2010, summary: "SEO-led roundup; outdated screenshots and pricing." },
+  { site: "cleartax.in", words: 2640, summary: "Tax-focused explainer with GST and ITR coverage; light on tooling comparisons." },
+  { site: "razorpay.com/blog", words: 2180, summary: "Brand-led post pushing Razorpay products; useful payments context, weak on alternatives." },
+  { site: "zoho.com/in", words: 3050, summary: "Comprehensive Zoho-first guide with India GST and UPI workflows." },
+  { site: "freshbooks.com", words: 1890, summary: "US-centric overview; misses Indian compliance like e-invoicing and multi-GSTIN." },
+  { site: "quickbooks.intuit.com", words: 2920, summary: "Generic global top-10 listicle; thin on INR pricing and CA hand-off." },
 ];
 
 export const mockGaps = [
-  "No comparison of UPI auto-reconciliation across the top 5 tools",
-  "Missing pricing breakdown in INR including GST",
-  "No mention of CA/Tally migration paths for SMBs",
-  "Zero coverage of e-invoicing readiness (B2B turnover > ₹5 Cr)",
-  "Mobile app workflows for field-sales founders ignored",
-  "No section on multi-GSTIN handling for cross-state sellers",
-  "Refund and credit-note flow comparisons are completely absent",
+  "None of the top articles cover GST filing for freelancers specifically",
+  "No comparison of free vs paid tiers for Indian startups under ₹50L ARR",
+  "Missing section on Razorpay vs Cashfree for small businesses",
+  "Zero coverage of e-invoicing readiness once turnover crosses ₹5 Cr",
+  "No realistic Tally → cloud migration timeline for bootstrapped founders",
+  "Multi-GSTIN handling for cross-state sellers is completely ignored",
 ];
 
 export const mockBrief = {
