@@ -25,12 +25,12 @@ Deno.serve(async (req) => {
       return json({ error: "Invalid payload" }, 400);
     }
 
-    const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
-    if (!OPENAI_API_KEY) {
-      console.error("OPENAI_API_KEY not configured in edge function environment");
-      return json({ error: "OPENAI_API_KEY not configured on the server" }, 500);
+    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
+    if (!GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY not configured in edge function environment");
+      return json({ error: "GEMINI_API_KEY not configured on the server" }, 500);
     }
-    console.log(`[research-article] keyword="${keyword}" key_present=true key_length=${OPENAI_API_KEY.length}`);
+    console.log(`[research-article] keyword="${keyword}" key_present=true key_length=${GEMINI_API_KEY.length}`);
 
     const systemPrompt = `You are a senior SEO content writer for the Indian market. Write a complete, original, well-researched article (~1500 words minimum) in Markdown based on the provided brief and target keyword. Use the exact title as # H1, use each H2 as ## sections in order, write substantial paragraphs (no fluff), include concrete India-specific examples, INR pricing where relevant, and finish with a ## FAQ section answering each provided FAQ. Do not include meta-commentary. Output Markdown only.`;
 
@@ -44,42 +44,41 @@ Brief:
 - FAQs: ${(brief.faqs || []).map((q: string) => `- ${q}`).join("\n  ")}`;
 
     const requestBody = {
-      model: "gpt-4o-mini",
-      max_tokens: 2000,
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
+      systemInstruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 4000,
+      },
     };
 
-    const aiRes = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
+    const aiRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(requestBody),
+      }
+    );
 
-    console.log(`[research-article] OpenAI response status: ${aiRes.status}`);
+    console.log(`[research-article] Gemini response status: ${aiRes.status}`);
 
     if (!aiRes.ok) {
       const errorText = await aiRes.text();
-      console.error(`[research-article] OpenAI API error ${aiRes.status}:`, errorText);
-      if (aiRes.status === 401) {
-        return json({ error: "Invalid OPENAI_API_KEY. Please check the key in Lovable Cloud secrets.", details: errorText }, 401);
+      console.error(`[research-article] Gemini API error ${aiRes.status}:`, errorText);
+      if (aiRes.status === 400) {
+        return json({ error: "Invalid request or GEMINI_API_KEY. Please check the key in Lovable Cloud secrets.", details: errorText }, 400);
       }
       if (aiRes.status === 429) {
-        return json({ error: "OpenAI rate limit or quota exceeded. Check your OpenAI billing.", details: errorText }, 429);
+        return json({ error: "Gemini rate limit or quota exceeded.", details: errorText }, 429);
       }
-      return json({ error: `OpenAI API error (${aiRes.status})`, details: errorText }, 502);
+      return json({ error: `Gemini API error (${aiRes.status})`, details: errorText }, 502);
     }
     const data = await aiRes.json();
-    console.log(`[research-article] OpenAI returned, choices=${data.choices?.length}`);
-    const article = data.choices?.[0]?.message?.content as string | undefined;
+    const article = data.candidates?.[0]?.content?.parts?.[0]?.text as string | undefined;
     if (!article) {
       console.error("[research-article] Empty article content:", JSON.stringify(data).slice(0, 500));
-      return json({ error: "OpenAI returned empty article", details: JSON.stringify(data).slice(0, 500) }, 500);
+      return json({ error: "Gemini returned empty article", details: JSON.stringify(data).slice(0, 500) }, 500);
     }
     return json({ article }, 200);
   } catch (err) {
