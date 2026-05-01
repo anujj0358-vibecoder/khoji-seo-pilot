@@ -43,7 +43,7 @@ export const Hero = () => {
           </div>
           <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Khoji analyzes your competitors, finds their content gaps, and writes SEO articles you approve before they go live. Built for Indian founders.{" "}
-            <span className="text-foreground font-semibold">₹599 launch price</span>{" "}
+            <span className="text-foreground font-semibold">₹499 launch price</span>{" "}
             <span className="line-through text-muted-foreground/70">₹799</span>/month.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
@@ -54,7 +54,7 @@ export const Hero = () => {
                 </>
               ) : (
                 <>
-                  Get Khoji Pro — ₹599 <ArrowRight className="h-5 w-5" />
+                  Get Khoji Pro — ₹499 <ArrowRight className="h-5 w-5" />
                 </>
               )}
             </Button>
