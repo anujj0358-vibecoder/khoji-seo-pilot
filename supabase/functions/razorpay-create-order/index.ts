@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const amount = 59900; // ₹599 launch price in paise
+    const amount = 49900; // ₹499 launch price in paise
     const currency = "INR";
 
     // Create Razorpay order

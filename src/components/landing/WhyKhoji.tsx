@@ -19,7 +19,7 @@ const features = [
   {
     icon: IndianRupee,
     title: "Affordable",
-    desc: "₹799/month vs ₹8,000+ for Ahrefs. Built for bootstrapped founders, not enterprises.",
+    desc: "₹499/month vs ₹8,000+ for Ahrefs. Built for bootstrapped founders, not enterprises.",
   },
 ];
 
