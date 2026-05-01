@@ -57,7 +57,7 @@ export const Pricing = () => {
           </div>
           <h3 className="text-2xl font-bold text-foreground">Khoji Pro</h3>
           <div className="mt-4 flex items-baseline gap-2">
-            <span className="text-5xl font-extrabold text-foreground">₹599</span>
+            <span className="text-5xl font-extrabold text-foreground">₹499</span>
             <span className="text-2xl text-muted-foreground/70 line-through">₹799</span>
             <span className="text-muted-foreground">/month</span>
           </div>
@@ -82,7 +82,7 @@ export const Pricing = () => {
                 <Loader2 className="h-5 w-5 animate-spin" /> Opening checkout…
               </>
             ) : (
-              "Get Khoji Pro — ₹599"
+              "Get Khoji Pro — ₹499"
             )}
           </Button>
         </div>
