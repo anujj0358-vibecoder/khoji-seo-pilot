@@ -5,6 +5,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function json(body: unknown, status: number) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -14,114 +21,76 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       { global: { headers: { Authorization: req.headers.get("Authorization") || "" } } }
     );
+
     const { data: { user }, error: userErr } = await supabase.auth.getUser();
     if (userErr || !user) return json({ error: "Unauthorized" }, 401);
 
     const { keyword } = await req.json();
-    if (!keyword || typeof keyword !== "string" || keyword.trim().length < 2) {
-      return json({ error: "Invalid keyword" }, 400);
-    }
+    if (!keyword || keyword.trim().length < 2) return json({ error: "Invalid keyword" }, 400);
     const kw = keyword.trim();
 
-    const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY");
-    if (!GEMINI_API_KEY) {
-      console.error("GEMINI_API_KEY not configured in edge function environment");
-      return json({ error: "GEMINI_API_KEY not configured on the server" }, 500);
-    }
-    console.log(`[research-brief] keyword="${kw}" key_present=true key_length=${GEMINI_API_KEY.length}`);
+    const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
+    if (!GROQ_API_KEY) return json({ error: "GROQ_API_KEY not configured" }, 500);
 
-    const systemPrompt = `You are an expert SEO strategist for the Indian market. For a given keyword, return:
-- 5 realistic competitor websites currently ranking on Google for that keyword (use real Indian-relevant domains where applicable). For each: site domain, approximate word count (1800-3200), and a one-line summary of what they cover and what they miss.
-- 6 specific content gaps — things none of those top results cover well — phrased as crisp bullets.
-- An article brief: SEO-optimized title (under 70 chars), meta description (under 160 chars), target word count (~2500-3000), 6 H2 section headings, and 3 useful FAQs. All MUST be specific to the keyword, not generic.`;
+    const prompt = `You are an expert SEO strategist for the Indian market.
 
-    const responseSchema = {
-      type: "object",
-      properties: {
-        serp: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              site: { type: "string" },
-              words: { type: "number" },
-              summary: { type: "string" },
-            },
-            required: ["site", "words", "summary"],
-          },
-        },
-        gaps: { type: "array", items: { type: "string" } },
-        brief: {
-          type: "object",
-          properties: {
-            title: { type: "string" },
-            meta: { type: "string" },
-            wordCount: { type: "number" },
-            h2: { type: "array", items: { type: "string" } },
-            faqs: { type: "array", items: { type: "string" } },
-          },
-          required: ["title", "meta", "wordCount", "h2", "faqs"],
-        },
+For the keyword: "${kw}"
+
+Return a JSON object with exactly this structure:
+{
+  "serp": [
+    { "site": "domain.com", "words": 2200, "summary": "one line about what they cover and miss" }
+  ],
+  "gaps": ["gap 1", "gap 2", "gap 3", "gap 4", "gap 5", "gap 6"],
+  "brief": {
+    "title": "SEO title under 70 chars",
+    "meta": "meta description under 160 chars",
+    "wordCount": 2500,
+    "h2": ["Section 1", "Section 2", "Section 3", "Section 4", "Section 5", "Section 6"],
+    "faqs": ["Question 1?", "Question 2?", "Question 3?"]
+  }
+}
+
+Rules:
+- serp must have exactly 5 items with real Indian-relevant domains
+- gaps must have exactly 6 items specific to this keyword
+- All content must be specific to "${kw}" — nothing generic
+- Return ONLY the JSON, no explanation, no markdown`;
+
+    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${GROQ_API_KEY}`,
+        "Content-Type": "application/json",
       },
-      required: ["serp", "gaps", "brief"],
-    };
-
-    const requestBody = {
-      systemInstruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: "user", parts: [{ text: `Keyword: "${kw}"` }] }],
-      generationConfig: {
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 2000,
         temperature: 0.7,
-        maxOutputTokens: 2000,
-        responseMimeType: "application/json",
-        responseSchema,
-      },
-    };
+      }),
+    });
 
-    const aiRes = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      }
-    );
-
-    console.log(`[research-brief] Gemini response status: ${aiRes.status}`);
-
-    if (!aiRes.ok) {
-      const errorText = await aiRes.text();
-      console.error(`[research-brief] Gemini API error ${aiRes.status}:`, errorText);
-      if (aiRes.status === 400) {
-        return json({ error: "Invalid request or GEMINI_API_KEY. Please check the key in Lovable Cloud secrets.", details: errorText }, 400);
-      }
-      if (aiRes.status === 429) {
-        return json({ error: "Gemini rate limit or quota exceeded.", details: errorText }, 429);
-      }
-      return json({ error: `Gemini API error (${aiRes.status})`, details: errorText }, 502);
+    if (!groqRes.ok) {
+      const err = await groqRes.text();
+      return json({ error: "Groq API error", details: err }, 502);
     }
-    const data = await aiRes.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) {
-      console.error("[research-brief] No text in Gemini response:", JSON.stringify(data).slice(0, 500));
-      return json({ error: "Gemini returned empty response", details: JSON.stringify(data).slice(0, 500) }, 500);
-    }
+
+    const groqData = await groqRes.json();
+    const text = groqData.choices?.[0]?.message?.content;
+    if (!text) return json({ error: "Empty response from Groq" }, 500);
+
     let parsed;
     try {
-      parsed = JSON.parse(text);
-    } catch (e) {
-      console.error("[research-brief] Failed to parse Gemini JSON:", text.slice(0, 500));
-      return json({ error: "Gemini did not return valid JSON", details: text.slice(0, 500) }, 500);
+      const clean = text.replace(/```json|```/g, "").trim();
+      parsed = JSON.parse(clean);
+    } catch {
+      return json({ error: "Invalid JSON from Groq", details: text.slice(0, 300) }, 500);
     }
+
     return json(parsed, 200);
+
   } catch (err) {
-    console.error("[research-brief] Unexpected error:", err);
-    return json({ error: "Edge function crashed", details: String(err) }, 500);
+    return json({ error: "Unexpected error", details: String(err) }, 500);
   }
 });
-
-function json(body: unknown, status: number) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
