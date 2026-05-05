@@ -10,6 +10,7 @@ import { DashboardLayout } from "./components/dashboard/DashboardLayout";
 import DashboardHome from "./pages/dashboard/DashboardHome.tsx";
 import Research from "./pages/dashboard/Research.tsx";
 import HistoryPage from "./pages/dashboard/HistoryPage.tsx";
+import ResearchDetail from "./pages/dashboard/ResearchDetail.tsx";
 import AccountPage from "./pages/dashboard/AccountPage.tsx";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -37,6 +38,7 @@ const App = () => (
               <Route index element={<DashboardHome />} />
               <Route path="research" element={<Research />} />
               <Route path="history" element={<HistoryPage />} />
+              <Route path="research/:id" element={<ResearchDetail />} />
               <Route path="account" element={<AccountPage />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
