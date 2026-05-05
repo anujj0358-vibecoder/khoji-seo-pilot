@@ -9,6 +9,18 @@ import { useAuth } from "@/contexts/AuthContext";
 type SerpRow = { site: string; words: number; summary: string };
 type Brief = { title: string; meta: string; wordCount: number; h2: string[]; faqs: string[] };
 
+const RESEARCH_STORAGE_KEY = "khoji_research_cache";
+
+type ResearchCache = {
+  keyword: string;
+  submittedKeyword: string;
+  serp: SerpRow[];
+  gaps: string[];
+  brief: Brief | null;
+  article: string;
+  approved: boolean;
+};
+
 const Research = () => {
   const { session } = useAuth();
   const [keyword, setKeyword] = useState("");
@@ -22,6 +34,41 @@ const Research = () => {
   const [brief, setBrief] = useState<Brief | null>(null);
   const [article, setArticle] = useState<string>("");
   const researchIdRef = useRef<string | null>(null);
+
+  // Load cached research on mount
+  useEffect(() => {
+    const cached = localStorage.getItem(RESEARCH_STORAGE_KEY);
+    if (cached) {
+      try {
+        const data = JSON.parse(cached);
+        setSubmittedKeyword(data.submittedKeyword);
+        setSerp(data.serp);
+        setGaps(data.gaps);
+        setBrief(data.brief);
+        setArticle(data.article);
+        setApproved(data.approved);
+        setShowResults(true);
+      } catch (e) {
+        console.error("Failed to load cached research:", e);
+      }
+    }
+  }, []);
+
+  // Save research results to localStorage whenever they change
+  useEffect(() => {
+    if (showResults && brief) {
+      const cacheData: ResearchCache = {
+        keyword,
+        submittedKeyword,
+        serp,
+        gaps,
+        brief,
+        article,
+        approved,
+      };
+      localStorage.setItem(RESEARCH_STORAGE_KEY, JSON.stringify(cacheData));
+    }
+  }, [keyword, submittedKeyword, serp, gaps, brief, article, approved, showResults]);
 
   const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +113,19 @@ const Research = () => {
     setSubmittedKeyword(k);
     setResearching(false);
     setShowResults(true);
+    
+    // Save to localStorage
+    const cacheData: ResearchCache = {
+      keyword: k,
+      submittedKeyword: k,
+      serp: result.serp,
+      gaps: result.gaps,
+      brief: result.brief,
+      article: "",
+      approved: false,
+    };
+    localStorage.setItem(RESEARCH_STORAGE_KEY, JSON.stringify(cacheData));
+    
     toast.success("SERP analyzed — brief ready");
   };
 
@@ -95,6 +155,20 @@ const Research = () => {
 
     setWriting(false);
     setApproved(true);
+    
+    // Update localStorage with article
+    const cached = localStorage.getItem(RESEARCH_STORAGE_KEY);
+    if (cached) {
+      try {
+        const cacheData = JSON.parse(cached);
+        cacheData.article = generated;
+        cacheData.approved = true;
+        localStorage.setItem(RESEARCH_STORAGE_KEY, JSON.stringify(cacheData));
+      } catch (e) {
+        console.error("Failed to update cached research with article:", e);
+      }
+    }
+    
     toast.success("Brief approved — article generated");
   };
 
