@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -7,12 +7,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 
 type Row = { id: string; keyword: string; status: string; created_at: string };
-
 const HistoryPage = () => {
   const { session } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<Row[]>([]);
-
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
@@ -74,12 +73,10 @@ const HistoryPage = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <Button asChild variant="ghost" size="sm" className="text-foreground">
-                      <Link to={`/dashboard/research/${row.id}`}>
-                        <Eye className="h-3.5 w-3.5" /> View
-                      </Link>
-                    </Button>
-                  </td>
+  <Button variant="ghost" size="sm" className="text-foreground" onClick={() => navigate(`/dashboard/research/${row.id}`)}>
+    <Eye className="h-3.5 w-3.5" /> View
+  </Button>
+</td>
                 </tr>
               ))}
             </tbody>
