@@ -97,12 +97,30 @@ Deno.serve(async (req) => {
         activated_at: now.toISOString(),
         expires_at: expires.toISOString(),
       })
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .eq("razorpay_order_id", razorpay_order_id)
+      .select("id");
 
     if (updErr) {
       console.error("Failed to update subscription", updErr);
       return new Response(JSON.stringify({ error: "Failed to activate subscription" }), {
         status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Verify the order belongs to this user
+    const { data: verifyRow } = await admin
+      .from("subscriptions")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("razorpay_order_id", razorpay_order_id)
+      .eq("razorpay_payment_id", razorpay_payment_id)
+      .maybeSingle();
+    if (!verifyRow) {
+      console.warn("Order does not belong to authenticated user", { userId, razorpay_order_id });
+      return new Response(JSON.stringify({ error: "Order does not belong to this user" }), {
+        status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -113,7 +131,7 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("verify-payment error", err);
-    return new Response(JSON.stringify({ error: String(err) }), {
+    return new Response(JSON.stringify({ error: "An unexpected error occurred. Please try again." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
