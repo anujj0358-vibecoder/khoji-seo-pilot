@@ -75,7 +75,7 @@ const HistoryPage = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <Button onClick={() => navigate(`/dashboard/research/${row.id}`)} variant="ghost" size="sm" className="text-foreground">
+                    <Button variant="ghost" size="sm" className="text-foreground" onClick={() => window.location.href = `/dashboard/research/${row.id}`}>
                       <Eye className="h-3.5 w-3.5" /> View
                     </Button>
                   </td>
