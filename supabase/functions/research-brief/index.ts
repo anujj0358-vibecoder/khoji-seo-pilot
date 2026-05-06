@@ -25,9 +25,26 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userErr } = await supabase.auth.getUser();
     if (userErr || !user) return json({ error: "Unauthorized" }, 401);
 
+    // Enforce active subscription server-side
+    const admin = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
+    const { data: sub } = await admin
+      .from("subscriptions")
+      .select("status, expires_at")
+      .eq("user_id", user.id)
+      .maybeSingle();
+    const active = sub?.status === "active" &&
+      (!sub.expires_at || new Date(sub.expires_at) > new Date());
+    if (!active) return json({ error: "Subscription required" }, 403);
+
     const { keyword } = await req.json();
-    if (!keyword || keyword.trim().length < 2) return json({ error: "Invalid keyword" }, 400);
-    const kw = keyword.trim();
+    if (typeof keyword !== "string" || keyword.trim().length < 2) {
+      return json({ error: "Invalid keyword" }, 400);
+    }
+    const kw = keyword.trim().slice(0, 200).replace(/[`"\\]/g, "").replace(/\s+/g, " ");
+    if (kw.length < 2) return json({ error: "Invalid keyword" }, 400);
 
     const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY");
     if (!GROQ_API_KEY) return json({ error: "GROQ_API_KEY not configured" }, 500);
@@ -72,8 +89,8 @@ Rules:
     });
 
     if (!groqRes.ok) {
-      const err = await groqRes.text();
-      return json({ error: "Groq API error", details: err }, 502);
+      console.error("[research-brief] Groq error", groqRes.status, await groqRes.text());
+      return json({ error: "Upstream AI service error" }, 502);
     }
 
     const groqData = await groqRes.json();
@@ -84,13 +101,15 @@ Rules:
     try {
       const clean = text.replace(/```json|```/g, "").trim();
       parsed = JSON.parse(clean);
-    } catch {
-      return json({ error: "Invalid JSON from Groq", details: text.slice(0, 300) }, 500);
+    } catch (e) {
+      console.error("[research-brief] JSON parse failed", e, text?.slice?.(0, 300));
+      return json({ error: "Invalid response from AI" }, 500);
     }
 
     return json(parsed, 200);
 
   } catch (err) {
-    return json({ error: "Unexpected error", details: String(err) }, 500);
+    console.error("[research-brief] Unexpected error:", err);
+    return json({ error: "An unexpected error occurred. Please try again." }, 500);
   }
 });
