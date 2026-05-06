@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
     const order = await orderRes.json();
     if (!orderRes.ok) {
       console.error("Razorpay order creation failed", order);
-      return new Response(JSON.stringify({ error: "Failed to create order", details: order }), {
+      return new Response(JSON.stringify({ error: "Failed to create order" }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -94,7 +94,7 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     console.error("create-order error", err);
-    return new Response(JSON.stringify({ error: String(err) }), {
+    return new Response(JSON.stringify({ error: "An unexpected error occurred. Please try again." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
